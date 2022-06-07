@@ -4,13 +4,14 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
 import itertools,re
-#import nltk
-#nltk.download('brown')
-#from nltk.corpus import brown
+import nltk
+nltk.download('brown')
+from nltk.corpus import brown
 corpus = [
     'he is a nice king',
     'she is a cool queen',
     'he is a big man',
+    'he is a vegan man',
     'she is a big woman',
     'warsaw is an awesome poland capital',
     'berlin is tight germany capital',
@@ -28,7 +29,6 @@ def CBOW(raw_text, window_size=2):
         data.append((context, target))
     return data
 
-"""
 brownt = ""
 for cat in ['news']:
     for text_id in brown.fileids(cat):
@@ -42,18 +42,17 @@ for cat in ['news']:
         brownt += text
         #brownt.append([w for w in text.split() if w != ''])
 brownt = brownt.split()
-"""
 
 def tokenize_corpus(corpus):
     tokens = [x.split() for x in corpus]
     return tokens
 
 
-test_text = """Please be a vegan.  Even if all you do is smile and say 'hello'. I've never forgotten that lesson. I also learned her name was Dorothy.""".split()
+test_text = """Please be a vegan ok.  Even if all you do is smile and say 'hello'. I've never forgotten that lesson. I also learned her name was Dorothy.""".split()
 #print(brownt)
 
-tokenized_corpus = tokenize_corpus(test_text)
-cbow = CBOW(test_text)
+tokenized_corpus = tokenize_corpus(brownt)
+cbow = CBOW(brownt)
 
 print(tokenized_corpus)
 vocabulary = []
@@ -98,27 +97,9 @@ class CBOW_Model(torch.nn.Module):
         self.activation_function = nn.ReLU()
 
     def forward(self, inputs):
-        out = self.embeddings(inputs).view((1,-1))
+        out = torch.sum(self.embeddings(inputs),dim=0).view((1,-1))
         out = self.linear(out) # nonlinear + projection
-        #out = F.log_softmax(out, dim=1) # softmax compute log probability
-        #embeds = sum(self.embeddings(inputs)).view(1,-1)
-        #print("input shape should be 1,4", inputs)
-        #out = self.embeddings(inputs) 
-        #print("after embedding:", out.shape)
-        #print("view should change to 1,1200 ", out.view(1,-1).shape)
-        #print("shape wtf", embeds.shape)
-
-        #out = self.embeddings(inputs) #.view(1,-1)
-        #print("other shape", out)
-        #print("other shape", out.shape)
-        #out = out.mean(axis=1)
-        #print("other other shape", out.shape)
-        #out = self.embeddings(inputs).view((1, -1))
-        #out = F.relu(self.linear1(embeds))
-
-        #out = self.activation_function(out)
         out = F.log_softmax(out, dim=1)
-        #out = self.linear2(out)
         return out
     def word2vec(self, input ):
         embeds = sum(self.embeddings(inputs)).view(1,-1)
@@ -147,7 +128,7 @@ optimizer = optim.Adam(model.parameters())
 #print(tokenized_corpus)
 print(cbow)
 losses = []
-epochs = 550
+epochs = 1
 for epoch in range(epochs):
     total_loss = 0
     print("epoch:", epoch)
@@ -169,22 +150,42 @@ for epoch in range(epochs):
     print(total_loss)
 
     losses.append(total_loss)
-torch.save(model.state_dict(), "cbow.model")
+#torch.save(model.state_dict(), "cbow.model")
 print(losses)
 print("done training")
 #print(model.predict(['i','love'])
 
-embeddings = model.embeddings
+#embeddings = model.embeddings
 def get_closest(target_word,  n=5):
-    print(word2idx)
-    idx = word2idx[target_word]
-    word_embedding = model.embeddings[idx]
+    t = torch.tensor([word2idx[target_word]], dtype=torch.long)
+    word_embedding = model.embeddings(t)
     distances = []
-    for word, index in word_to_idx.items():
+    for word, index in word2idx.items():
         if word == target_word:
             continue
-        distances.append((word, torch.dist(word_embedding, embeddings[index])))
+        it = torch.tensor([word2idx[word]], dtype=torch.long)
+        distances.append((word, torch.nn.CosineSimilarity()(word_embedding, model.embeddings(it))))
+        #distances.append((word, torch.dist(word_embedding, model.embeddings(it))))
     
     results = sorted(distances, key=lambda x: x[1])[1:n+2]
+    print("closest to: ", target_word, " ", results, "\n")
     return results
-print(get_closest("name"))
+def print_semantics(target_word,n=5):
+    t = torch.tensor([word2idx[target_word]], dtype=torch.long)
+    word_embedding = model.embeddings(t)
+    out = model.linear(word_embedding)
+    top_words = []
+    for word, index in word2idx.items():
+        if word == target_word:
+            continue
+        it = torch.tensor([word2idx[word]], dtype=torch.long)
+        top_words.append((word,out[0,index] ))
+        #distances.append((word, torch.dist(word_embedding, model.embeddings(it))))
+    
+    results = sorted(top_words, key=lambda x: x[1])[1:n+2]
+    print("vector for:", target_word, " ", results, "\n")
+    return results
+
+
+get_closest("vegan")
+print_semantics("vegan")
