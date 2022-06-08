@@ -12,7 +12,7 @@ corpus = [
     'she is a cool queen',
     'he is a big man',
     'he is a vegan man',
-    'she is a big woman',
+    'she is a big woman americans',
     'warsaw is an awesome poland capital',
     'berlin is tight germany capital',
     'paris is france capital for real',
@@ -48,7 +48,7 @@ def tokenize_corpus(corpus):
     return tokens
 
 
-test_text = """Please be a vegan ok.  Even if all you do is smile and say 'hello'. I've never forgotten that lesson. I also learned her name was Dorothy.""".split()
+test_text = """Please be a vegan ok. americans Even if all you do is smile and say 'hello'. I've never forgotten that lesson. I also learned her name was Dorothy.""".split()
 #print(brownt)
 
 tokenized_corpus = tokenize_corpus(brownt)
@@ -178,14 +178,12 @@ def print_semantics(target_word,n=5):
     for word, index in word2idx.items():
         if word == target_word:
             continue
-        it = torch.tensor([word2idx[word]], dtype=torch.long)
         top_words.append((word,out[0,index] ))
-        #distances.append((word, torch.dist(word_embedding, model.embeddings(it))))
     
     results = sorted(top_words, key=lambda x: x[1])[1:n+2]
     print("vector for:", target_word, " ", results, "\n")
     return results
 
 
-get_closest("vegan")
-print_semantics("vegan")
+get_closest("americans")
+print_semantics("americans")
