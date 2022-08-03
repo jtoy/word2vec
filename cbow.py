@@ -88,7 +88,7 @@ for sentence in tokenized_corpus:
 idx_pairs = np.array(idx_pairs) # it will be useful to have this as numpy array
 print(idx_pairs)
 
-  
+#input: surrounding words predicts: a singlescontext word
 class CBOW_Model(torch.nn.Module):
     def __init__(self, vocab_size, embedding_dim):
         super(CBOW_Model, self).__init__()
@@ -105,7 +105,7 @@ class CBOW_Model(torch.nn.Module):
         embeds = sum(self.embeddings(inputs)).view(1,-1)
         out = self.linear(embeds)
 
-
+#input: single context words predicts: words around it
 class SkipGram_Model(torch.nn.Module):
     def __init__(self, vocab_size, embedding_dim):
         super(SkipGram_Model, self).__init__()
